@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python tests/test_knowledge_base.py)",
+      "Bash(PYTHONIOENCODING=utf-8 python tests/test_knowledge_base.py)",
+      "Bash(python -c ':*)",
+      "Bash(PYTHONIOENCODING=utf-8 python tests/test_ingestion.py)",
+      "Bash(PYTHONIOENCODING=utf-8 python tests/test_agent.py)",
+      "Bash(PYTHONIOENCODING=utf-8 python scripts/validate_all.py)",
+      "Bash(PYTHONIOENCODING=utf-8 python scripts/_seed_silver_dev.py)"
+    ]
+  }
+}
