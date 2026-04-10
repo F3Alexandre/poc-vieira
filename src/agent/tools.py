@@ -163,8 +163,12 @@ class ToolExecutor:
                 "confidence": r.confidence,
                 "date": r.created_at[:10] if r.created_at else "",
             }
-            # Evitar duplicatas
-            existing_ids = [kr["chunk_id"] for kr in working_memory.knowledge_refs]
+            # Evitar duplicatas (knowledge_refs pode conter strings ou dicts)
+            existing_ids = set()
+            for kr in working_memory.knowledge_refs:
+                if isinstance(kr, dict):
+                    existing_ids.add(kr.get("chunk_id", ""))
+                # strings não têm chunk_id, ignorar na dedup
             if r.chunk_id not in existing_ids:
                 working_memory.knowledge_refs.append(ref)
 
