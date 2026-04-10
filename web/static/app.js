@@ -43,7 +43,13 @@ function handleServerMessage(data) {
             addMessage('agent', data.content);
             break;
         case 'thinking':
-            showThinking(data.content);
+            showThinking('Processando...');
+            break;
+        case 'tool_call':
+            addThinkingStep(data.content, data.tool, 'running');
+            break;
+        case 'tool_result':
+            updateThinkingStep(data.tool, data.status === 'ok' || !data.status ? 'done' : 'error');
             break;
         case 'status':
             updateStatus(data.data);
@@ -135,8 +141,15 @@ function addMessage(type, content) {
     scrollToBottom();
 }
 
-function showThinking() {
-    removeThinking();
+function showThinking(label) {
+    // If already showing, just update the label
+    const existing = document.getElementById('thinking-indicator');
+    if (existing) {
+        const lbl = existing.querySelector('.thinking-label');
+        if (lbl) lbl.textContent = label || 'Processando...';
+        return;
+    }
+
     hideWelcome();
     const container = document.getElementById('chat-messages');
 
@@ -154,21 +167,77 @@ function showThinking() {
     const bubble = document.createElement('div');
     bubble.className = 'thinking-bubble';
 
+    const header = document.createElement('div');
+    header.className = 'thinking-header';
+
     const dots = document.createElement('div');
     dots.className = 'thinking-dots';
     dots.innerHTML = '<span></span><span></span><span></span>';
 
-    const label = document.createElement('span');
-    label.textContent = 'Pensando...';
+    const labelEl = document.createElement('span');
+    labelEl.className = 'thinking-label';
+    labelEl.textContent = label || 'Processando...';
 
-    bubble.appendChild(dots);
-    bubble.appendChild(label);
+    header.appendChild(dots);
+    header.appendChild(labelEl);
+
+    const stepsList = document.createElement('div');
+    stepsList.className = 'thinking-steps';
+    stepsList.id = 'thinking-steps';
+
+    bubble.appendChild(header);
+    bubble.appendChild(stepsList);
     inner.appendChild(avatar);
     inner.appendChild(bubble);
     row.appendChild(inner);
     container.appendChild(row);
 
     scrollToBottom();
+}
+
+function addThinkingStep(description, toolName, status) {
+    // Ensure thinking indicator exists
+    if (!document.getElementById('thinking-indicator')) {
+        showThinking('Executando ferramentas...');
+    }
+
+    const stepsList = document.getElementById('thinking-steps');
+    if (!stepsList) return;
+
+    // Update label
+    const lbl = document.querySelector('.thinking-label');
+    if (lbl) lbl.textContent = description;
+
+    const step = document.createElement('div');
+    step.className = `thinking-step step-${status}`;
+    step.dataset.tool = toolName;
+
+    const icon = document.createElement('span');
+    icon.className = 'step-icon';
+    icon.textContent = status === 'running' ? '⏳' : status === 'done' ? '✅' : '❌';
+
+    const text = document.createElement('span');
+    text.className = 'step-text';
+    text.textContent = description;
+
+    step.appendChild(icon);
+    step.appendChild(text);
+    stepsList.appendChild(step);
+
+    scrollToBottom();
+}
+
+function updateThinkingStep(toolName, status) {
+    const stepsList = document.getElementById('thinking-steps');
+    if (!stepsList) return;
+
+    const steps = stepsList.querySelectorAll(`.thinking-step[data-tool="${toolName}"]`);
+    const step = steps[steps.length - 1]; // Get last matching step
+    if (!step) return;
+
+    step.className = `thinking-step step-${status}`;
+    const icon = step.querySelector('.step-icon');
+    if (icon) icon.textContent = status === 'done' ? '✅' : '❌';
 }
 
 function removeThinking() {
@@ -354,8 +423,21 @@ function addCardToSidebar(data) {
     link.href = data.url;
     link.target = '_blank';
     link.dataset.filename = data.filename;
-    link.textContent = data.filename;
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'card-name';
+    nameSpan.textContent = data.filename;
+
+    const downloadIcon = document.createElement('span');
+    downloadIcon.className = 'card-download';
+    downloadIcon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+    link.appendChild(nameSpan);
+    link.appendChild(downloadIcon);
     container.appendChild(link);
+
+    // Flash animation to draw attention
+    link.style.animation = 'cardIn 0.5s ease';
 }
 
 // ============================================================

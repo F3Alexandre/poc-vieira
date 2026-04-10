@@ -87,8 +87,8 @@ TOOL_DEFINITIONS = [
         "name": "generate_card",
         "description": (
             "Gera o card completo em Markdown no template padronizado. "
-            "Só chame quando TODOS os campos obrigatórios estiverem preenchidos. "
-            "O card é salvo em data/output/cards/."
+            "O card é salvo em data/output/cards/. "
+            "Se o usuário pedir para gerar mesmo com campos faltando, use force_generate=true."
         ),
         "parameters": {
             "type": "object",
@@ -96,6 +96,10 @@ TOOL_DEFINITIONS = [
                 "generate_children": {
                     "type": "boolean",
                     "description": "Se True, gera também os cards filhos"
+                },
+                "force_generate": {
+                    "type": "boolean",
+                    "description": "Se True, gera o card mesmo com campos obrigatórios faltando"
                 }
             },
             "required": []

@@ -119,10 +119,37 @@ async def websocket_chat(ws: WebSocket):
     try:
         model = LLM_MODEL or DEFAULT_MODELS.get(LLM_PROVIDER)
         llm_client = create_llm_client(provider=LLM_PROVIDER, model=model)
+
+        # Callback para enviar ações de progresso ao frontend em tempo real
+        async def on_action(action_type: str, data: dict):
+            try:
+                if action_type == "thinking":
+                    await ws.send_json({
+                        "type": "thinking",
+                        "content": f"Passo {data.get('step', '?')}...",
+                    })
+                elif action_type == "tool_call":
+                    await ws.send_json({
+                        "type": "tool_call",
+                        "content": data.get("description", "Executando ferramenta..."),
+                        "tool": data.get("tool", ""),
+                        "step": data.get("step", 0),
+                    })
+                elif action_type == "tool_result":
+                    await ws.send_json({
+                        "type": "tool_result",
+                        "tool": data.get("tool", ""),
+                        "status": data.get("status", "ok"),
+                        "step": data.get("step", 0),
+                    })
+            except Exception:
+                pass  # WebSocket pode ter fechado
+
         agent = SpecAgent(
             llm_client=llm_client,
             db_path=DB_PATH,
             output_dir=OUTPUT_DIR,
+            on_action=on_action,
         )
         active_sessions[session_id] = agent
     except Exception as e:
@@ -161,6 +188,13 @@ async def websocket_chat(ws: WebSocket):
                 if not content:
                     continue
 
+                # Snapshot de cards existentes ANTES de processar (nome → mtime)
+                cards_dir = Path(OUTPUT_DIR)
+                cards_before = {}
+                if cards_dir.exists():
+                    for f in cards_dir.glob("*.md"):
+                        cards_before[f.name] = f.stat().st_mtime
+
                 # Feedback de thinking
                 await ws.send_json({"type": "thinking", "content": "Processando..."})
 
@@ -174,19 +208,20 @@ async def websocket_chat(ws: WebSocket):
                 # Sempre enviar status atualizado após cada mensagem
                 await ws.send_json({"type": "status", "data": agent.get_status()})
 
-                # Verificar se card foi gerado
-                cards_dir = Path(OUTPUT_DIR)
+                # Verificar se cards foram gerados ou atualizados
                 if cards_dir.exists():
-                    cards = list(cards_dir.glob("*.md"))
-                    if cards:
-                        latest = max(cards, key=lambda f: f.stat().st_mtime)
-                        await ws.send_json({
-                            "type": "card_generated",
-                            "data": {
-                                "filename": latest.name,
-                                "url": f"/api/cards/{latest.name}",
-                            },
-                        })
+                    for f in sorted(cards_dir.glob("*.md"), key=lambda x: x.stat().st_mtime):
+                        current_mtime = f.stat().st_mtime
+                        previous_mtime = cards_before.get(f.name)
+                        # Card é novo OU foi modificado
+                        if previous_mtime is None or current_mtime > previous_mtime:
+                            await ws.send_json({
+                                "type": "card_generated",
+                                "data": {
+                                    "filename": f.name,
+                                    "url": f"/api/cards/{f.name}",
+                                },
+                            })
 
     except WebSocketDisconnect:
         logger.info(f"Sessão {session_id} desconectada")

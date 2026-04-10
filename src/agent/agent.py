@@ -39,7 +39,7 @@ class SpecAgent:
         llm_client,
         db_path: str,
         output_dir: str = "data/output/cards",
-        max_tool_calls_per_turn: int = 3,
+        max_tool_calls_per_turn: int = 5,
         on_action=None,
     ):
         self.llm = llm_client
@@ -70,9 +70,12 @@ class SpecAgent:
 
         # Loop ReAct
         tool_calls_count = 0
+        total_iterations = 0
+        max_iterations = self.max_tool_calls + 2  # safety limit
         actions_log = []  # Registro de ações para o frontend
 
-        while True:
+        while total_iterations < max_iterations:
+            total_iterations += 1
             # Montar contexto completo
             messages = self._build_messages()
 
@@ -106,15 +109,25 @@ class SpecAgent:
                     "step": tool_calls_count,
                 })
 
-                # Executar tool
-                result = await self.tools.execute(tool_name, tool_params, self.memory)
-
-                # Emitir resultado
-                await self._emit_action("tool_result", {
-                    "tool": tool_name,
-                    "status": result.get("status", "ok"),
-                    "step": tool_calls_count,
-                })
+                # Executar tool (com tratamento de erro para sempre emitir resultado)
+                try:
+                    result = await self.tools.execute(tool_name, tool_params, self.memory)
+                    tool_status = result.get("status", "ok")
+                    # Normalizar status para o frontend
+                    is_success = tool_status in ("ok", "success", "saved", "complete")
+                    await self._emit_action("tool_result", {
+                        "tool": tool_name,
+                        "status": "ok" if is_success else "error",
+                        "step": tool_calls_count,
+                    })
+                except Exception as e:
+                    logger.error(f"Erro ao executar tool {tool_name}: {e}", exc_info=True)
+                    result = {"status": "error", "error": str(e)}
+                    await self._emit_action("tool_result", {
+                        "tool": tool_name,
+                        "status": "error",
+                        "step": tool_calls_count,
+                    })
 
                 # Adicionar ao contexto
                 self.conversation.append({
@@ -127,6 +140,19 @@ class SpecAgent:
                 })
 
                 continue  # Volta ao loop para o LLM processar o resultado
+
+            elif tool_call and tool_calls_count >= self.max_tool_calls:
+                # Limite de tool calls atingido — pedir ao LLM para responder sem tools
+                logger.warning(f"Limite de {self.max_tool_calls} tool calls atingido, forçando resposta")
+                self.conversation.append({
+                    "role": "assistant",
+                    "content": "[Tentativa de chamar ferramenta ignorada — limite atingido]",
+                })
+                self.conversation.append({
+                    "role": "user",
+                    "content": "[SISTEMA] Limite de ferramentas atingido. Responda ao usuário com as informações que já tem, sem chamar mais ferramentas.",
+                })
+                continue
 
             # Não é tool call — é resposta final ao usuário
             # Extrair atualização do Working Memory (se houver)
@@ -204,18 +230,24 @@ class SpecAgent:
     def _extract_tool_call(self, response: str) -> Optional[Dict]:
         """Extrai tool call da resposta do LLM.
 
-        O LLM deve retornar tool calls no formato:
-        ```json
-        {"tool": "nome", "params": {...}}
-        ```
-
-        Tenta múltiplos padrões de extração, incluindo JSON aninhado.
+        O LLM deve retornar APENAS o JSON (sem code blocks), mas tratamos
+        múltiplos formatos como fallback.
         """
-        # Padrão 1: JSON em code block
+        stripped = response.strip()
+
+        # Padrão 0: Resposta INTEIRA é JSON puro (caso ideal após fix do prompt)
+        if stripped.startswith("{") and stripped.endswith("}"):
+            data = self._try_parse_tool_json(stripped)
+            if data:
+                logger.info("Tool call extraída: resposta é JSON puro")
+                return data
+
+        # Padrão 1: JSON em code block (fallback se LLM ainda usar ```)
         match = re.search(r'```(?:json)?\s*\n?\s*(\{[^`]*?"tool"\s*:.*?\})\s*\n?\s*```', response, re.DOTALL)
         if match:
             data = self._try_parse_tool_json(match.group(1))
             if data:
+                logger.info("Tool call extraída: JSON em code block")
                 return data
 
         # Padrão 2: Buscar JSON com balanceamento de chaves (suporta aninhamento)
@@ -224,20 +256,21 @@ class SpecAgent:
             # Encontrar o { antes do "tool"
             brace_start = response.rfind('{', 0, tool_pos)
             if brace_start != -1:
-                # Encontrar o } balanceado correspondente
                 extracted = self._extract_balanced_json(response, brace_start)
                 if extracted:
                     data = self._try_parse_tool_json(extracted)
                     if data:
+                        logger.info("Tool call extraída: JSON embutido com chaves balanceadas")
                         return data
 
-        # Padrão 3: JSON no final da resposta (última linha)
-        lines = response.strip().split("\n")
+        # Padrão 3: JSON no final da resposta
+        lines = stripped.split("\n")
         for i in range(len(lines) - 1, max(len(lines) - 10, -1), -1):
             line = lines[i].strip()
             if line.startswith("{") and '"tool"' in line:
                 data = self._try_parse_tool_json(line)
                 if data:
+                    logger.info("Tool call extraída: JSON no final da resposta")
                     return data
 
         return None
