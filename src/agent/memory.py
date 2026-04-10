@@ -208,7 +208,12 @@ class WorkingMemory:
         if self.observations:
             lines.append("\n**Contradições/ambiguidades detectadas:**")
             for obs in self.observations:
-                lines.append(f"- [{obs['type']}] {obs['description']}")
+                if isinstance(obs, dict):
+                    obs_type = obs.get('type', 'info')
+                    obs_desc = obs.get('description', obs.get('text', str(obs)))
+                    lines.append(f"- [{obs_type}] {obs_desc}")
+                else:
+                    lines.append(f"- {obs}")
 
         return "\n".join(lines)
 

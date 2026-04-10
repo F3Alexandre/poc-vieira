@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spec Agent</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">S</div>
+                    <span class="logo-text">Spec Agent</span>
+                </div>
+                <button class="icon-btn" id="toggle-sidebar" title="Fechar sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                </button>
+            </div>
+
+            <!-- Checklist -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <h3>Checklist</h3>
+                    <span id="checklist-count" class="badge">0/7</span>
+                </div>
+                <div id="checklist-progress" class="progress-bar">
+                    <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <div id="checklist" class="checklist-items">
+                    <label class="check-item" data-field="persona">
+                        <span class="check-box"></span>
+                        <span class="check-label">Persona</span>
+                    </label>
+                    <label class="check-item" data-field="action">
+                        <span class="check-box"></span>
+                        <span class="check-label">Acao</span>
+                    </label>
+                    <label class="check-item" data-field="benefit">
+                        <span class="check-box"></span>
+                        <span class="check-label">Beneficio</span>
+                    </label>
+                    <label class="check-item" data-field="business_rules">
+                        <span class="check-box"></span>
+                        <span class="check-label">Regras de negocio</span>
+                    </label>
+                    <label class="check-item" data-field="main_flow">
+                        <span class="check-box"></span>
+                        <span class="check-label">Fluxo principal</span>
+                    </label>
+                    <label class="check-item" data-field="acceptance_criteria">
+                        <span class="check-box"></span>
+                        <span class="check-label">Criterios de aceite</span>
+                    </label>
+                    <label class="check-item" data-field="scope_defined">
+                        <span class="check-box"></span>
+                        <span class="check-label">Escopo definido</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Sessao -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <h3>Sessao</h3>
+                </div>
+                <div class="session-grid">
+                    <div class="session-stat">
+                        <span class="stat-label">Fase</span>
+                        <span class="stat-value" id="phase">coleta_inicial</span>
+                    </div>
+                    <div class="session-stat">
+                        <span class="stat-label">Contexto</span>
+                        <span class="stat-value" id="context-tokens">0 <small>tokens</small></span>
+                    </div>
+                    <div class="session-stat">
+                        <span class="stat-label">Refs base</span>
+                        <span class="stat-value" id="knowledge-refs">0</span>
+                    </div>
+                    <div class="session-stat">
+                        <span class="stat-label">Observacoes</span>
+                        <span class="stat-value" id="observations">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <h3>Cards gerados</h3>
+                </div>
+                <div id="cards-list">
+                    <p class="empty-state">Nenhum card gerado ainda</p>
+                </div>
+            </div>
+
+            <!-- Acoes rapidas -->
+            <div class="sidebar-actions">
+                <button class="action-btn" onclick="sendCommand('/status')" title="Ver status">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    Status
+                </button>
+                <button class="action-btn" onclick="sendCommand('/memory')" title="Ver memoria">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 14a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm1-4a1 1 0 0 1-2 0V8a1 1 0 0 1 2 0z"/></svg>
+                    Memory
+                </button>
+                <button class="action-btn" onclick="sendCommand('/save')" title="Salvar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save
+                </button>
+                <button class="action-btn accent" onclick="sendCommand('/generate')" title="Gerar card">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    Gerar
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main class="main">
+            <!-- Top bar -->
+            <div class="topbar">
+                <button class="icon-btn" id="open-sidebar" title="Abrir sidebar" style="display:none">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                </button>
+                <div class="topbar-center">
+                    <span class="model-label">Spec Agent</span>
+                </div>
+                <div class="topbar-right">
+                    <div id="connection-status" class="conn-indicator disconnected">
+                        <span class="conn-dot"></span>
+                        <span class="conn-text">Desconectado</span>
+                    </div>
+                    <button class="icon-btn" id="theme-toggle" title="Alternar tema">
+                        <svg id="theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        <svg id="theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat -->
+            <div id="chat-messages" class="chat-messages">
+                <!-- Welcome screen -->
+                <div id="welcome-screen" class="welcome">
+                    <div class="welcome-icon">S</div>
+                    <h2>Spec Agent</h2>
+                    <p>Gerador interativo de User Stories.<br>Descreva a feature que deseja especificar.</p>
+                    <div class="welcome-chips">
+                        <button class="chip" onclick="useChip(this)">Quero criar uma feature de login com 2FA</button>
+                        <button class="chip" onclick="useChip(this)">Preciso especificar um fluxo de pagamento</button>
+                        <button class="chip" onclick="useChip(this)">Quero evoluir o modulo de relatorios</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="input-wrapper">
+                <div class="input-container">
+                    <textarea
+                        id="chat-input"
+                        placeholder="Descreva a funcionalidade..."
+                        rows="1"
+                    ></textarea>
+                    <button id="send-btn" onclick="sendMessage()" disabled title="Enviar (Enter)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </button>
+                </div>
+                <p class="input-hint">Enter para enviar &middot; Shift+Enter para nova linha</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

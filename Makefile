@@ -1,4 +1,4 @@
-.PHONY: setup seed ingest test agent demo validate clean reset all
+.PHONY: setup seed ingest test agent demo validate clean reset all web web-dev
 
 # Detectar python
 PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
@@ -63,6 +63,14 @@ reset:
 	@echo ">>> Reset completo..."
 	@rm -rf data/
 	@echo "✓ Tudo removido. Execute 'make setup && make seed' para recomeçar."
+
+## Inicia o servidor web (Etapa 6)
+web:
+	@$(PYTHON) scripts/run_web.py
+
+## Inicia o servidor web com auto-reload (dev)
+web-dev:
+	@$(PYTHON) scripts/run_web.py --reload
 
 ## Pipeline completo: seed → ingest → validate
 all: seed ingest validate

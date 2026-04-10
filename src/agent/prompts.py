@@ -172,4 +172,27 @@ A cada resposta que modifica o estado da especificação, inclua no FINAL da sua
 {{"campo": "valor_atualizado", ...}}
 </working_memory_update>
 
+Use EXATAMENTE estes nomes de campos (são os campos obrigatórios do checklist):
+
+| Campo no update              | Tipo                    | Exemplo                                                  |
+|------------------------------|-------------------------|----------------------------------------------------------|
+| `persona`                    | string                  | `"Cliente PF que comprou na plataforma"`                 |
+| `action`                     | string                  | `"Solicitar devolução de produto"`                       |
+| `benefit`                    | string                  | `"Reduzir atrito no pós-venda"`                          |
+| `business_rules`             | lista de dicts          | `[{{"id": "RN-01", "rule": "Prazo 30 dias"}}]`           |
+| `main_flow`                  | lista de strings        | `["1. Acessa Meus Pedidos", "2. Seleciona pedido", ...]` |
+| `acceptance_criteria_product`| lista de dicts          | `[{{"id": "CA-01", "dado": "...", "quando": "...", "entao": "..."}}]` |
+| `acceptance_criteria_technical`| lista de dicts        | `[{{"id": "CA-T01", "dado": "...", "quando": "...", "entao": "..."}}]` |
+| `in_scope`                   | lista de strings        | `["Devolução total por PF", "Geração de etiqueta"]`     |
+| `out_of_scope`               | lista de strings/dicts  | `["Devolução parcial", "Marketplace terceiros"]`         |
+
+Campos opcionais: `feature`, `domain`, `is_new_feature`, `stakeholders`, `context_description`,
+`alternative_flows`, `error_flows`, `non_acceptance_criteria`, `integrations`, `nfr`,
+`observations`, `knowledge_refs`, `child_cards`, `current_phase`.
+
+IMPORTANTE:
+- NÃO use `acceptance_criteria` sozinho — sempre use `acceptance_criteria_product` e/ou `acceptance_criteria_technical`
+- NÃO use `scope_defined` — sempre use `in_scope` e `out_of_scope` separados
+- Listas são ADICIONADAS (extend), não substituídas. Envie apenas itens NOVOS.
+
 Isso permite ao sistema manter o Working Memory sincronizado."""

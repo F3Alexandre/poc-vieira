@@ -212,26 +212,39 @@ class ToolExecutor:
         }
 
     def _generate_card(self, params: Dict, working_memory) -> Dict:
-        """Gera card(s) Markdown."""
+        """Gera card(s) Markdown.
+
+        Suporta:
+        - force_generate=True para gerar mesmo com campos faltando
+        - user_confirmed=True como sinal de que o usuário aceitou gerar incompleto
+        """
         from src.agent.card_generator import generate_card_markdown
 
-        # Verificar se está pronto
+        force = params.get("force_generate", False) or params.get("user_confirmed", False)
+
+        # Verificar se está pronto (pular se force)
         missing = working_memory.get_missing_fields()
-        if missing:
+        if missing and not force:
             return {
                 "status": "incomplete",
                 "missing_fields": missing,
-                "message": f"Campos obrigatórios faltando: {', '.join(missing)}. Gerar assim mesmo requer confirmação do usuário.",
+                "message": f"Campos obrigatórios faltando: {', '.join(missing)}. "
+                           f"Use force_generate=true para gerar mesmo assim.",
             }
 
         filepath = generate_card_markdown(working_memory, self.output_dir)
 
-        return {
+        result = {
             "status": "success",
             "filepath": filepath,
             "observations_count": len(working_memory.observations),
             "child_cards_count": len(working_memory.child_cards),
         }
+
+        if missing:
+            result["warning"] = f"Gerado com campos faltando: {', '.join(missing)}"
+
+        return result
 
     def close(self):
         self.search.close()

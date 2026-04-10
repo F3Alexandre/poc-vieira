@@ -2,9 +2,7 @@
 anthropic>=0.40.0
 # openai>=1.50.0
 
-# Nenhuma outra dependência externa.
-# O projeto usa apenas stdlib do Python:
-# - sqlite3 (FTS5)
-# - json, uuid, hashlib, dataclasses
-# - asyncio, argparse, logging
-# - os, sys, re, time, tempfile
+# Web (Etapa 6)
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+websockets>=12.0

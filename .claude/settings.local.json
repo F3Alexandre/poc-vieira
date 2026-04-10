@@ -7,7 +7,16 @@
       "Bash(PYTHONIOENCODING=utf-8 python tests/test_ingestion.py)",
       "Bash(PYTHONIOENCODING=utf-8 python tests/test_agent.py)",
       "Bash(PYTHONIOENCODING=utf-8 python scripts/validate_all.py)",
-      "Bash(PYTHONIOENCODING=utf-8 python scripts/_seed_silver_dev.py)"
+      "Bash(PYTHONIOENCODING=utf-8 python scripts/_seed_silver_dev.py)",
+      "Bash(xargs grep:*)",
+      "Bash(PYTHONIOENCODING=utf-8 make test)",
+      "Bash(python scripts/run_web.py --port 8765)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8765/)",
+      "Bash(curl -s -L -o /dev/null -w \"HTTP %{http_code} | Size: %{size_download} bytes\\\\n\" http://127.0.0.1:8765/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | Size: %{size_download} bytes\\\\n\" http://127.0.0.1:8765/static/index.html)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | Size: %{size_download} bytes | Content-Type: %{content_type}\\\\n\" http://127.0.0.1:8765/static/style.css)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | Size: %{size_download} bytes | Content-Type: %{content_type}\\\\n\" http://127.0.0.1:8765/static/app.js)",
+      "Bash(curl -s http://127.0.0.1:8765/api/cards)"
     ]
   }
 }
